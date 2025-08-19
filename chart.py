@@ -2,86 +2,56 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from PIL import Image
-import io
 
-# Set random seed for reproducible results
+# Set random seed for reproducibility
 np.random.seed(42)
 
-# Generate realistic synthetic data for marketing campaign effectiveness
-n_campaigns = 120
+# Simulate product categories
+categories = ['Electronics', 'Clothing', 'Home & Kitchen', 'Sports & Outdoors', 'Toys & Games', 'Beauty']
 
-# Generate data with clear patterns
-np.random.seed(42)
-campaign_data = {
-    'marketing_spend': np.random.uniform(10, 100, n_campaigns),  # Marketing spend in thousands
-    'conversion_rate': np.random.uniform(1, 20, n_campaigns),    # Conversion rate percentage
-    'campaign_type': np.random.choice(['Social Media', 'Email', 'PPC', 'Display'], n_campaigns),
-    'duration_days': np.random.randint(7, 60, n_campaigns)
-}
-
-# Create stronger correlation between spend and conversion
-for i in range(n_campaigns):
-    base_conversion = campaign_data['marketing_spend'][i] * 0.15 + np.random.normal(0, 2)
-    campaign_data['conversion_rate'][i] = max(0.5, min(25, base_conversion))
+# Generate realistic average customer satisfaction scores (scale 1-5)
+scores = [
+    np.random.normal(loc=4.1, scale=0.15, size=120), # Electronics
+    np.random.normal(loc=3.7, scale=0.17, size=100), # Clothing
+    np.random.normal(loc=4.3, scale=0.12, size=90),  # Home & Kitchen
+    np.random.normal(loc=3.9, scale=0.2, size=80),   # Sports & Outdoors
+    np.random.normal(loc=4.0, scale=0.13, size=60),  # Toys & Games
+    np.random.normal(loc=4.2, scale=0.14, size=65),  # Beauty
+]
 
 # Create DataFrame
-df = pd.DataFrame(campaign_data)
+cat_list = []
+score_list = []
+for idx, cat in enumerate(categories):
+    cat_list.extend([cat] * len(scores[idx]))
+    score_list.extend(scores[idx])
+    
+data = pd.DataFrame({'Product Category': cat_list, 'Customer Satisfaction': score_list})
 
-# Set Seaborn style and context
-sns.set_style("whitegrid")
-sns.set_context("notebook", font_scale=1.2)
+# Truncate scores between 1 and 5
+data['Customer Satisfaction'] = data['Customer Satisfaction'].clip(1, 5)
 
-# Create figure with exact dimensions
+# Seaborn professional styling
+sns.set_style('whitegrid')
+sns.set_context('talk')
+palette = sns.color_palette('Set2')
+
 plt.figure(figsize=(8, 8))
-
-# Create the Seaborn scatterplot - this is the key validation point
-sns.scatterplot(
-    data=df,
-    x='marketing_spend',
-    y='conversion_rate',
-    hue='campaign_type',
-    size='duration_days',
-    sizes=(60, 200),
-    alpha=0.8,
-    palette='Set2'
+bar = sns.barplot(
+    data=data,
+    x='Product Category',
+    y='Customer Satisfaction',
+    ci='sd',
+    palette=palette,
+    edgecolor='black'
 )
 
-# Customize the plot professionally
-plt.title('Marketing Campaign Effectiveness Analysis\nSpend vs Conversion Rate by Campaign Type', 
-          fontsize=16, fontweight='bold', pad=20)
-plt.xlabel('Marketing Spend (Thousands USD)', fontsize=14, fontweight='semibold')
-plt.ylabel('Conversion Rate (%)', fontsize=14, fontweight='semibold')
+bar.set_title('Average Customer Satisfaction by Product Category', fontsize=18, weight='bold', pad=20)
+bar.set_xlabel('Product Category', fontsize=14)
+bar.set_ylabel('Avg. Customer Satisfaction (1-5)', fontsize=14)
 
-# Improve legend positioning
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-
-# Add subtle grid and styling
-plt.grid(True, alpha=0.3)
-sns.despine()
-
-# Ensure tight layout
+plt.xticks(rotation=20, ha='right')
+plt.ylim(3.0, 4.6)
 plt.tight_layout()
-
-# Save to buffer and resize to exactly 512x512
-buf = io.BytesIO()
-plt.savefig(buf, format='png', dpi=80, facecolor='white', edgecolor='none', 
-            bbox_inches='tight')
-buf.seek(0)
-
-# Resize to exactly 512x512 pixels
-img = Image.open(buf)
-img_resized = img.resize((512, 512), Image.Resampling.LANCZOS)
-img_resized.save('chart.png', 'PNG', optimize=True)
-buf.close()
-
-# Display summary statistics
-print("Marketing Campaign Effectiveness Analysis")
-print("=" * 50)
-print(f"Total Campaigns: {len(df)}")
-print(f"Average Marketing Spend: ${df['marketing_spend'].mean():.2f}K")
-print(f"Average Conversion Rate: {df['conversion_rate'].mean():.2f}%")
-print(f"Correlation (Spend vs Conversion): {df['marketing_spend'].corr(df['conversion_rate']):.3f}")
-print("\nChart generated successfully with Seaborn scatterplot!")
-
-plt.show()
+plt.savefig('chart.png', dpi=64, bbox_inches='tight')
+plt.close()
